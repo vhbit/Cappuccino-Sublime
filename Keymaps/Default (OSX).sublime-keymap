@@ -1,5 +1,5 @@
 [
-    { "keys": ["ctrl+alt+d"], "command": "lookup_symbol", "args": {"target": "cappdoc"}},
+    { "keys": ["ctrl+alt+d"], "command": "lookup_symbol", "args": {"target": "web"}},
     { "keys": ["ctrl+shift+d"], "command": "lookup_symbol"},
     { "keys": ["]"], "command": "balance_brackets", "context":
         [
