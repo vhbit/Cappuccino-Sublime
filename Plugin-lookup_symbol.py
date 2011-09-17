@@ -1,6 +1,5 @@
 import re
 import subprocess
-import urllib2
 
 import sublime
 import sublime_plugin
