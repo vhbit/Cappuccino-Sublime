@@ -15,6 +15,7 @@ To install with Git, first make sure to remove any old Cappuccino or Objective-J
 * Smart formatting of class/method symbol list
 * Automatic context-aware bracket balancing
 * Lookup documentation for class, method, or other symbol in Ingredients (OS X only)
+* Code completion for class names/global functions/constants/selectors, you have to run "Objective J generate completions" command, note that it is available only for Obj-J files)
 * Snippets for:
   * Core
     * Snippets for generating classes/categories/importing/accessors/delegates/selectors
