@@ -6,7 +6,8 @@ from os.path import join
 import re
 
 class GenerateCappuccinoCompletionsCommand(sublime_plugin.WindowCommand):
-    SOURCE_RE = re.compile(r"^(CP|CG|CA)\w+\.j$")
+    CAPPUCCINO_SOURCE_RE = re.compile(r"^(CP|CG|CA)\w+\.j$")
+    SOURCE_RE = re.compile(r"^[A-Z]\w*.j$")
     IMPLEMENTATION_RE = re.compile(r"^@implementation\s+([\w\d]+)(?:\s*(?:(\([\w\d]+\))|:\s*([\w\d]+(?:\s*\<.+?\>)?)))?(.*?)^@end", re.MULTILINE + re.DOTALL)
     METHOD_RE = re.compile(r"^([-+])\s*\([\w\d]+\)([\w\d]+)(.*)$", re.MULTILINE)
     SIGNATURE_RE = re.compile(r"([\w\d]+?:)(\([\w\d]+(?: ?<[\w\d]+>)?\)[\w\d]+)")
@@ -16,6 +17,7 @@ class GenerateCappuccinoCompletionsCommand(sublime_plugin.WindowCommand):
     FUNCTION_RE = re.compile(r"^(?:function |_function\()(C[AGP][\w\d]+)\((.*?)\)", re.MULTILINE)
     FUNCTION_ARG_TEMPLATE = "${{{0}:{1}}}"
     FUNCTION_COMPLETION_TEMPLATE = "{0}({1})"
+    IGNORED_DIRS = ['Resources', '.git', '.svn', 'Build']
 
     INSTANCE_COMPLETIONS_TEMPLATE = """completions = [
 {0}
@@ -44,13 +46,13 @@ completions = [
         self.functions = {}
         self.constants = []
 
-    def parse_source_directory(self, path):
+    def parse_source_directory(self, path, fileFilterRE):
         for root, dirs, files in os.walk(path):
             if "Resources" in dirs:
                 dirs.remove("Resources")
 
             for f in files:
-                if self.SOURCE_RE.match(f):
+                if fileFilterRE.match(f):
                     self.parse_source(join(root, f))
 
     def add_method_signature(self, className, signature, isClassMethod):
@@ -124,7 +126,7 @@ completions = [
         return " ".join(contents)
 
     def write_instance_methods(self):
-        methods = sorted(self.instanceMethods.keys(), cmp=lambda x,y: cmp(x.lower(), y.lower()))
+        methods = sorted(self.instanceMethods.keys(), cmp=lambda x, y: cmp(x.lower(), y.lower()))
         completions = []
 
         for method in methods:
@@ -174,7 +176,7 @@ completions = [
 
         for className in self.classNames:
             completions = []
-            methods = sorted(self.classMethods.get(className, []), cmp=lambda x,y: cmp(x[0].lower(), y[0].lower()))
+            methods = sorted(self.classMethods.get(className, []), cmp=lambda x, y: cmp(x[0].lower(), y[0].lower()))
 
             # methods is a list of (stripped signature, [parameters]) tuples
             for method in methods:
@@ -186,12 +188,18 @@ completions = [
             outfile.close()
 
     def run(self):
-        sourcePath = sublime.load_settings(self.OBJECTIVEJ_SETTINGS).get(self.CAPPUCCINO_SOURCE_PATH_SETTING)
+        sourcePaths = self.window.active_view().settings().get('objj_src_paths')
 
-        if not sourcePath:
-            self.window.show_input_panel("Path to Cappuccino source:", "", self.generate, None, None)
+        if sourcePaths:
+            for sourcePath in sourcePaths:
+                self.generate(sourcePath)
         else:
-            self.generate(sourcePath)
+            sourcePath = sublime.load_settings(self.OBJECTIVEJ_SETTINGS).get(self.CAPPUCCINO_SOURCE_PATH_SETTING)
+
+            if not sourcePath:
+                self.window.show_input_panel("Path to Cappuccino source:", "", self.generate, None, None)
+            else:
+                self.generate(sourcePath)
 
     def generate(self, sourcePath):
         if not sourcePath:
@@ -205,23 +213,17 @@ completions = [
         foundationPath = join(sourcePath, "Foundation")
 
         if not os.path.isdir(appKitPath) or not os.path.isdir(foundationPath):
-            sublime.error_message("'{0}' does not appear to be a Cappuccino source directory.".format(sourcePath))
-            return
+            self.parse_source_directory(sourcePath, self.SOURCE_RE)
+        else:
+            self.parse_source_directory(appKitPath, self.CAPPUCCINO_SOURCE_RE)
+            self.parse_source_directory(foundationPath, self.CAPPUCCINO_SOURCE_RE)
 
-        self.parse_source_directory(appKitPath)
-        self.parse_source_directory(foundationPath)
+        # TODO: write only once, when all sources are processed
         self.write_instance_methods()
         self.write_class_methods()
         self.write_classes()
         self.write_functions()
         self.write_constants()
-
-        # If we make it this far, save the path so next time the user does not have to enter it
-        settings = sublime.load_settings(self.OBJECTIVEJ_SETTINGS)
-        settings.set(self.CAPPUCCINO_SOURCE_PATH_SETTING, sourcePath)
-        sublime.save_settings(self.OBJECTIVEJ_SETTINGS)
-
-        sublime.error_message("Cappuccino completions successfully generated.")
 
     def is_enabled(self):
         activeView = self.window.active_view()

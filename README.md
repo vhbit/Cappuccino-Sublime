@@ -9,6 +9,32 @@ To install with Git, first make sure to remove any old Cappuccino or Objective-J
         Linux: ~/.Sublime Text 2
         Windows: %APPDATA%\Sublime Text 2
 
+Setup:
+
+For code completion you have to specify `objj_src_paths` setting and run "Objective J generate code completion" command. In the example below Cappuccino sources and project root will be scanned for .j files. Please note, that only files which start with a capital letter are considered, i.e. "main.j" will be skipped.
+
+```json
+{
+    "folders":
+    [
+        {
+            "path": "/Users/vhbit/projects/webclient"
+        }
+    ],
+    "settings": 
+    {
+        "tab_size": 4,
+        "sublimelinter_gutter_marks": true,
+        "objj_src_paths": 
+        [
+            "/Users/vhbit/projects/external/cappuccino",
+            "/Users/vhbit/projects/webclient"
+        ]
+    }
+}
+```
+
+
 ## Features
 
 * Language/Syntax aware theme coloring
