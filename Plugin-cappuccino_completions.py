@@ -113,7 +113,7 @@ class CappuccinoCompletions(sublime_plugin.EventListener):
                 execfile(path, globals(), localVars)
                 symbolCompletions = localVars["completions"]
 
-                completions += [comp for comp in symbolCompletions if comp[0].find(prefix) >= 0]
+                completions += [comp for comp in symbolCompletions if comp[0].find(prefix) == 0]
             except Exception as ex:
                 print ex
                 pass
